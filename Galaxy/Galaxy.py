@@ -1,5 +1,5 @@
 import pygame
-from enum import Enum  # Add this import
+from enum import Enum
 
 # Colors (R, G, B)
 BLACK = (0, 0, 0)
@@ -15,7 +15,6 @@ HEIGHT = 360
 MIDLE_WIDTH = 10
 MIDLE_LEFT = WIDTH // 2 - MIDLE_WIDTH
 MIDLE_HEIGHT = HEIGHT
-
 
 # Spaceship
 SPACESHIP_WIDTH = 55
@@ -80,7 +79,7 @@ class Bullet:
 
 class Spaceship:
     """Represents a spaceship that can move and shoot."""
-    def __init__(self, x, y, image, bullet_color=YELLOW, direction=1):
+    def __init__(self, x, y, image, bullet_color=WHITE, direction=1):
         """
         Initialize a spaceship.
         x, y: Position
@@ -133,7 +132,7 @@ class Spaceship:
         if self.direction == 1:
             bullet_x = self.x + SPACESHIP_WIDTH
         else:
-            bullet_x = self.x - 10 # Left edge for left_firing ship
+            bullet_x = self.x
         bullet_y = self.y + SPACESHIP_HEIGHT//2 - 2
 
         # Limit max numer of bullets
