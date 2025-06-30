@@ -27,11 +27,17 @@ class Spaceship:
         """Move the spaceship, staying within bounds and not crossing the middle."""
         new_x = min(max(self.x + dx, 0), WIDTH - SPACESHIP_WIDTH)
         new_y = min(max(self.y + dy, 0), HEIGHT - SPACESHIP_HEIGHT)
-        new_rect = pygame.Rect(new_x, new_y, SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
-        middle_rect = pygame.Rect(MIDLE_LEFT, 0, MIDLE_WIDTH, MIDLE_HEIGHT)
-        # Prevent crossing the middle barrier
-        if not new_rect.colliderect(middle_rect):
-            self.x = new_x
+
+        # For left-side ship (direction == 1), don't cross right edge of middle
+        # For right-side ship (direction == -1), don't cross left edge of middle
+        if self.direction == 1:
+            max_x = MIDLE_LEFT - SPACESHIP_WIDTH
+            new_x = min(new_x, max_x)
+        else:
+            min_x = MIDLE_LEFT + MIDLE_WIDTH
+            new_x = max(new_x, min_x)
+
+        self.x = new_x
         self.y = new_y
         self.rect.topleft = (self.x, self.y)
 
