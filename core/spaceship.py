@@ -1,81 +1,7 @@
 import pygame
-from enum import Enum
 
-# Colors (R, G, B)
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
-
-# Screen dimensions
-WIDTH = 720
-HEIGHT = 360
-
-# Spaceships area
-MIDLE_WIDTH = 10
-MIDLE_LEFT = WIDTH // 2 - MIDLE_WIDTH
-MIDLE_HEIGHT = HEIGHT
-
-# Spaceship
-SPACESHIP_WIDTH = 55
-SPACESHIP_HEIGHT = 40
-
-# Game properties
-FPS = 60
-VEL = 5
-BORDER_WIDTH = 10
-SHOOTING_DELAY_MS = 100
-MAX_BULLETS = 3
-
-
-class Action(Enum):
-    UP = 0
-    DOWN = 1
-    LEFT = 2
-    RIGHT = 3
-    STAY = 4
-    SHOOT = 5
-
-    @classmethod
-    def all(cls):
-        return list(cls)
-    
-class Bullet:
-    """Represents a bullet fired by a spaceship."""
-    def __init__(self, x, y, direction, color, speed=10):
-        """
-        Initialize a bullet.
-        x, y: Position
-        direction: +1 (right), -1 (left)
-        color: Bullet color
-        speed: Bullet speed
-        """
-        self.x = x
-        self.y = y
-        self.direction = direction  # +1 for right, -1 for left
-        self.color = color
-        self.speed = speed
-        self.width = 10
-        self.height = 5
-        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
-
-    def move(self):
-        """Move the bullet in its direction."""
-        self.x += self.speed * self.direction
-        self.rect.x = self.x
-
-    def draw(self, surface):
-        """Draw the bullet on the given surface."""
-        pygame.draw.rect(surface, self.color, self.rect)
-
-    def is_off_screen(self):
-        """Check if the bullet is outside the screen."""
-        return self.x < 0 or self.x > WIDTH
-
-    def collides_with(self, other_rect):
-        """Check collision with another rect."""
-        return self.rect.colliderect(other_rect)
-    
+from .bullet import Bullet
+from .constants import HEIGHT, MAX_BULLETS, MIDLE_HEIGHT, MIDLE_LEFT, MIDLE_WIDTH, RED, SHOOTING_DELAY_MS, SPACESHIP_HEIGHT, SPACESHIP_WIDTH, WHITE, WIDTH, YELLOW
 
 class Spaceship:
     """Represents a spaceship that can move and shoot."""
@@ -117,7 +43,7 @@ class Spaceship:
             if self.bullet_color == RED:
                 pygame.draw.rect(surface, (RED), (self.x, self.y, SPACESHIP_WIDTH, SPACESHIP_HEIGHT))
             else:
-                pygame.draw.rect(surface, (YELLOW), (self.x, self.y, SPACESHIP_WIDTH, SPACESHIP_HEIGHT))
+                pygame.draw.rect(surface, YELLOW, (self.x, self.y, SPACESHIP_WIDTH, SPACESHIP_HEIGHT))
         # Draw all bullets
         for bullet in self.bullets:
             bullet.draw(surface)
