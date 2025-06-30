@@ -1,4 +1,3 @@
-The script (main.py) runs, and allows ships movement with the key board.
-- [ ] The middle line needs adjsutment as well the collision of the red ship with it
+The human_play script is working, it loads the spaceship images, however I will need to modify the core module to load it from there.
 
- - [ ]  the font is too big when displayed.
+next I will be working on the environment to train the agents using NEAT.

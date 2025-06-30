@@ -1,4 +1,5 @@
 import pygame
+from core.constants import HEIGHT, SPACESHIP_HEIGHT, SPACESHIP_WIDTH, WIDTH
 from core.game import Game
 from core.actions import Action
 
@@ -6,11 +7,20 @@ from core.actions import Action
 """The script to play human vs human"""
 
 pygame.init()
-window = pygame.display.set_mode((720, 360))
+window = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Spaceship Battle Player1 vs Player2")
 
+# The space Image loading for future usage. Not usable from the play_human script"
+# space_image = pygame.transform.scale(
+#     pygame.image.load("assets/space.png"), (WIDTH, HEIGHT)
+# )
+
 yellow_image = pygame.image.load("assets/spaceship_yellow.png").convert_alpha()
+yellow_image = pygame.transform.rotate(pygame.transform.scale(
+    yellow_image, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 90)
 red_image = pygame.image.load("assets/spaceship_red.png").convert_alpha()
+red_image = pygame.transform.rotate(pygame.transform.scale(
+    red_image, (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 270)
 game = Game(window, yellow_image=yellow_image, red_image=red_image)
 
 clock = pygame.time.Clock()
