@@ -15,7 +15,7 @@ class GameInformation:
 
 class Game:
     def __init__(self, window, yellow_image=None, red_image=None):
-        self.SCORE_FONT = pygame.font.SysFont("comicsans", 36)
+        self.SCORE_FONT = pygame.font.SysFont("comicsans", 16)
         self.window = window
 
         # Init ships
@@ -33,11 +33,12 @@ class Game:
         self.red_hits = 0
 
     def _draw_divider(self):
-        for i in range(0, HEIGHT, 20):
-            if (i // 20) % 2 == 0:
-                pygame.draw.rect(
-                    self.window, WHITE, (WIDTH // 2 - 5, i, 10, 20)
-                )
+        pygame.draw.rect(
+            self.window,
+            WHITE,
+            (WIDTH // 2 - 5, 0, 10, HEIGHT)
+        )
+        # pass
 
     def _draw_score(self):
         yellow_text = self.SCORE_FONT.render(
