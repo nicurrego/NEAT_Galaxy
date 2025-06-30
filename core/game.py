@@ -1,6 +1,6 @@
 import pygame
 from core.constants import (
-    WIDTH, HEIGHT, BLACK, WHITE, RED, YELLOW,
+    MIDLE_LEFT, MIDLE_WIDTH, WIDTH, HEIGHT, BLACK, WHITE, RED, YELLOW,
     FPS
 )
 from core.spaceship import Spaceship
@@ -33,12 +33,12 @@ class Game:
         self.red_hits = 0
 
     def _draw_divider(self):
-        pygame.draw.rect(
-            self.window,
-            WHITE,
-            (WIDTH // 2 - 5, 0, 10, HEIGHT)
-        )
-        # pass
+        # pygame.draw.rect(
+        #     self.window,
+        #     WHITE,
+        #     (MIDLE_LEFT, 0, MIDLE_WIDTH, HEIGHT)
+        # )
+        pass
 
     def _draw_score(self):
         yellow_text = self.SCORE_FONT.render(
