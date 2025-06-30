@@ -4,7 +4,7 @@ from core.actions import Action
 
 pygame.init()
 window = pygame.display.set_mode((720, 360))
-pygame.display.set_caption("Spaceship Battle")
+pygame.display.set_caption("Sapce Game training")
 
 game = Game(window)
 
