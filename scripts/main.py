@@ -1,5 +1,6 @@
 import os
 import pickle
+import random
 import neat
 import pygame
 
@@ -56,6 +57,85 @@ class SpaceGame:
         genome1.fitness = self.game.yellow_hits
         genome2.fitness = self.game.red_hits
         return False
+    
+    def test_ai(
+        self,
+        net_yellow=None,
+        net_red=None,
+        config=None,
+        controller_yellow='manual',
+        controller_red='manual',
+        draw=True,
+        max_steps=1000,
+    ):
+        clock = pygame.time.Clock()
+        step_count = 0
+        done = False
+
+        while not done:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return True
+
+            # --- Yellow Ship Control
+            if controller_yellow == 'manual':
+                keys = pygame.key.get_pressed()
+                action_yellow = Action.STAY
+                if keys[pygame.K_w]:
+                    action_yellow = Action.UP
+                elif keys[pygame.K_s]:
+                    action_yellow = Action.DOWN
+                elif keys[pygame.K_a]:
+                    action_yellow = Action.LEFT
+                elif keys[pygame.K_d]:
+                    action_yellow = Action.RIGHT
+                elif keys[pygame.K_f]:
+                    action_yellow = Action.SHOOT
+            elif controller_yellow == 'ai' and net_yellow is not None:
+                obs = self.observe(self.yellow_ship, self.red_ship)
+                output = net_yellow.activate(obs)
+                action_yellow = self.output_to_action(output)
+            elif controller_yellow == 'random':
+                action_yellow = Action(random.randint(0, 5))
+            else:
+                action_yellow = Action.STAY
+
+            # --- Red Ship Control
+            if controller_red == 'manual':
+                keys = pygame.key.get_pressed()
+                action_red = Action.STAY
+                if keys[pygame.K_UP]:
+                    action_red = Action.UP
+                elif keys[pygame.K_DOWN]:
+                    action_red = Action.DOWN
+                elif keys[pygame.K_LEFT]:
+                    action_red = Action.LEFT
+                elif keys[pygame.K_RIGHT]:
+                    action_red = Action.RIGHT
+                elif keys[pygame.K_SLASH]:
+                    action_red = Action.SHOOT
+            elif controller_red == 'ai' and net_red is not None:
+                obs = self.observe(self.red_ship, self.yellow_ship)
+                output = net_red.activate(obs)
+                action_red = self.output_to_action(output)
+            elif controller_red == 'random':
+                action_red = Action(random.randint(0, 5))
+            else:
+                action_red = Action.STAY
+
+            self.game.move_spaceship(self.yellow_ship, action_yellow)
+            self.game.move_spaceship(self.red_ship, action_red)
+            self.game.update()
+
+            if draw:
+                self.game.draw()
+
+            step_count += 1
+            if self.game.is_game_over() or step_count >= max_steps:
+                done = True
+
+            clock.tick(FPS)
+        return False
 
 
     def observe(self, ship, enemy):
@@ -108,6 +188,8 @@ def eval_genomes(genomes, config):
             force_quit = galaxy.train_ai(genome1, genome2, config, draw=True)
             if force_quit:
                 quit()
+
+
 
 def run_neat(config_path):
     config = neat.Config(
