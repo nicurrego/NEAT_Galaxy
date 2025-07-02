@@ -5,6 +5,9 @@ next I will be working on the environment to train the agents using NEAT.
 # LAST DONE:
 tried best picke, triend some of the examples of the play_match.py
 
+# NEXT:
+add penalty for recieving hits, (keep it minimal)
+
 
 # Model Notes
 
