@@ -8,7 +8,7 @@ from core.game import Game
 from core.actions import Action
 from core.constants import WIDTH, HEIGHT, FPS
 
-MAX_BULLETS = 3  # Make sure this matches your constants
+MAX_BULLETS = 3  # Must match your core constants
 
 class SpaceGame:
     def __init__(self, window):
@@ -16,7 +16,7 @@ class SpaceGame:
         self.yellow_ship = self.game.yellow_ship
         self.red_ship = self.game.red_ship
 
-    def train_ai(self, genome1, genome2, config, draw=True, max_steps=100):
+    def train_ai(self, genome1, genome2, config, draw=False, max_steps=2000):
         net1 = neat.nn.FeedForwardNetwork.create(genome1, config)
         net2 = neat.nn.FeedForwardNetwork.create(genome2, config)
         clock = pygame.time.Clock()
@@ -45,19 +45,21 @@ class SpaceGame:
             if draw:
                 self.game.draw()
 
-            # Increment step count and check time limit
             step_count += 1
-            print(f"Steps = {step_count} ----------------------")
             if self.game.is_game_over() or step_count >= max_steps:
                 done = True
 
-            clock.tick()
+            # When draw=False, run as fast as possible
+            if draw:
+                clock.tick(FPS)
 
-        # Simple fitness: +1 per hit, +1 per life remaining
+        # Fitness assignment (customize as you wish!)
         genome1.fitness = self.game.yellow_hits
         genome2.fitness = self.game.red_hits
         return False
-    
+
+    # --- test_ai stays unchanged for human/AI testing in scripts/play_match.py ---
+
     def test_ai(
         self,
         net_yellow=None,
@@ -77,7 +79,7 @@ class SpaceGame:
                 if event.type == pygame.QUIT:
                     return True
 
-            # --- Yellow Ship Control
+            # Yellow Ship Control
             if controller_yellow == 'manual':
                 keys = pygame.key.get_pressed()
                 action_yellow = Action.STAY
@@ -100,7 +102,7 @@ class SpaceGame:
             else:
                 action_yellow = Action.STAY
 
-            # --- Red Ship Control
+            # Red Ship Control
             if controller_red == 'manual':
                 keys = pygame.key.get_pressed()
                 action_red = Action.STAY
@@ -137,7 +139,6 @@ class SpaceGame:
             clock.tick(FPS)
         return False
 
-
     def observe(self, ship, enemy):
         obs = []
         # Spaceship positions
@@ -145,8 +146,7 @@ class SpaceGame:
         obs.append(ship.y)
         obs.append(enemy.x)
         obs.append(enemy.y)
-
-        # Own bullets (up to MAX_BULLETS)
+        # Own bullets
         for i in range(MAX_BULLETS):
             if i < len(ship.bullets):
                 obs.append(ship.bullets[i].x)
@@ -154,8 +154,7 @@ class SpaceGame:
             else:
                 obs.append(-1)
                 obs.append(-1)
-
-        # Enemy bullets (up to MAX_BULLETS)
+        # Enemy bullets
         for i in range(MAX_BULLETS):
             if i < len(enemy.bullets):
                 obs.append(enemy.bullets[i].x)
@@ -163,15 +162,12 @@ class SpaceGame:
             else:
                 obs.append(-1)
                 obs.append(-1)
-
-        # Optionally: add more features here (like lives)
+        # Optionally: add more info
         # obs.append(self.game.yellow_lives)
         # obs.append(self.game.red_lives)
-        print(obs)
         return obs
 
     def output_to_action(self, output):
-        # Example: output is a list of size 6, one per Action. Pick the max.
         return Action(output.index(max(output)))
 
 def eval_genomes(genomes, config):
@@ -185,11 +181,10 @@ def eval_genomes(genomes, config):
             if genome2.fitness is None:
                 genome2.fitness = 0
             galaxy = SpaceGame(win)
-            force_quit = galaxy.train_ai(genome1, genome2, config, draw=True)
+            # ---- Training mode: draw=False, max_steps=2000 ----
+            force_quit = galaxy.train_ai(genome1, genome2, config, draw=False, max_steps=2000)
             if force_quit:
                 quit()
-
-
 
 def run_neat(config_path):
     config = neat.Config(
