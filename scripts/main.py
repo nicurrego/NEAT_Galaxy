@@ -16,12 +16,39 @@ class SpaceGame:
         self.yellow_ship = self.game.yellow_ship
         self.red_ship = self.game.red_ship
 
+    def calculate_fitness(self, hits, lives_left, steps_survived, win, movement=0):
+        """
+        Calculate fitness based on various metrics.
+        - hits: Number of hits scored
+        - lives_left: How many lives left at end
+        - steps_survived: Number of steps survived
+        - win: True if this agent won
+        - movement: Optional, number of moves made (not used unless you count moves)
+        """
+        HIT_REWARD = 10        
+        SURVIVAL_REWARD = 2    
+        STEP_REWARD = 0.03
+        WIN_BONUS = 15
+        MOVEMENT_REWARD = 0.07 
+
+        fitness = (
+            hits * HIT_REWARD +
+            lives_left * SURVIVAL_REWARD +
+            steps_survived * STEP_REWARD +
+            (WIN_BONUS if win else 0) +
+            movement * MOVEMENT_REWARD
+        )
+        return fitness
+
     def train_ai(self, genome1, genome2, config, draw=False, max_steps=2000):
         net1 = neat.nn.FeedForwardNetwork.create(genome1, config)
         net2 = neat.nn.FeedForwardNetwork.create(genome2, config)
         clock = pygame.time.Clock()
         done = False
         step_count = 0
+
+        yellow_moves = 0
+        red_moves = 0
 
         while not done:
             for event in pygame.event.get():
@@ -36,6 +63,12 @@ class SpaceGame:
 
             action1 = self.output_to_action(output1)
             action2 = self.output_to_action(output2)
+
+            # Track movement (not STAY)
+            if action1 != Action.STAY:
+                yellow_moves += 1
+            if action2 != Action.STAY:
+                red_moves += 1
 
             self.game.move_spaceship(self.yellow_ship, action1)
             self.game.move_spaceship(self.red_ship, action2)
@@ -53,13 +86,20 @@ class SpaceGame:
             if draw:
                 clock.tick(FPS)
 
-        # Fitness assignment (customize as you wish!)
-        genome1.fitness = self.game.yellow_hits
-        genome2.fitness = self.game.red_hits
+        # Fitness metrics
+        y_hits = self.game.yellow_hits
+        r_hits = self.game.red_hits
+        y_lives = self.game.yellow_lives
+        r_lives = self.game.red_lives
+        yellow_win = r_lives <= 0
+        red_win = y_lives <= 0
+
+        # Assign fitness using your new method!
+        genome1.fitness = self.calculate_fitness(y_hits, y_lives, step_count, yellow_win, yellow_moves)
+        genome2.fitness = self.calculate_fitness(r_hits, r_lives, step_count, red_win, red_moves)
         return False
 
     # --- test_ai stays unchanged for human/AI testing in scripts/play_match.py ---
-
     def test_ai(
         self,
         net_yellow=None,
@@ -191,13 +231,14 @@ def run_neat(config_path):
         neat.DefaultGenome, neat.DefaultReproduction,
         neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
     )
-    p = neat.Population(config)
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-49')
+    # p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(1))
 
-    winner = p.run(eval_genomes, 50)
+    winner = p.run(eval_genomes, 151)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 

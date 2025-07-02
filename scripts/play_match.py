@@ -37,8 +37,8 @@ if __name__ == "__main__":
     # game.test_ai(controller_yellow='manual', controller_red='manual', draw=True)
 
     # 2. Human (yellow, WASD+F) vs AI (red):
-    # net_red = load_net("best.pickle", config_path)
-    # game.test_ai(controller_yellow='manual', controller_red='ai', net_red=net_red, draw=True)
+    net_red = load_net("best.pickle", config_path)
+    game.test_ai(controller_yellow='manual', controller_red='ai', net_red=net_red, draw=True)
 
     # 3. AI (yellow) vs Human (red):
     # net_yellow = load_net("best.pickle", config_path)
