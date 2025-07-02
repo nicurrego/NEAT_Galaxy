@@ -1,0 +1,36 @@
+# Python cache and environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+*.venv
+env/
+venv/
+ENV/
+.ipynb_checkpoints/
+
+# NEAT checkpoints and best networks
+neat-checkpoint-*
+*.pickle
+*.pkl
+
+# Experiment logs and model runs
+/logs/*
+!logs/Space_log.md    # Keep your log/diary, ignore everything else
+
+# VSCode and editor files
+.vscode/
+*.code-workspace
+
+# OS/hidden/system files
+.DS_Store
+Thumbs.db
+
+# Ignore assets generated during runs (but not your images/sounds)
+assets/*.wav
+assets/*.mp3
+assets/*.ogg
+
+# Ignore config that shouldn't be tracked (if you have local only config)
+# !scripts/config.txt   # Uncomment if you want to keep config.txt tracked

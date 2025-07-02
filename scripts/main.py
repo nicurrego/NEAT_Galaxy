@@ -2,37 +2,118 @@ import os
 import pickle
 import neat
 import pygame
+
 from core.game import Game
 from core.actions import Action
+from core.constants import WIDTH, HEIGHT, FPS
 
-
+MAX_BULLETS = 3  # Make sure this matches your constants
 
 class SpaceGame:
-    def __init__(self, window, width, height):
-        self.game = Game(window, width, height)
+    def __init__(self, window):
+        self.game = Game(window)
         self.yellow_ship = self.game.yellow_ship
         self.red_ship = self.game.red_ship
 
-# def train_ai(self, genome1, )
+    def train_ai(self, genome1, genome2, config, draw=True, max_steps=100):
+        net1 = neat.nn.FeedForwardNetwork.create(genome1, config)
+        net2 = neat.nn.FeedForwardNetwork.create(genome2, config)
+        clock = pygame.time.Clock()
+        done = False
+        step_count = 0
+
+        while not done:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return True  # Force quit
+
+            obs1 = self.observe(self.yellow_ship, self.red_ship)
+            obs2 = self.observe(self.red_ship, self.yellow_ship)
+
+            output1 = net1.activate(obs1)
+            output2 = net2.activate(obs2)
+
+            action1 = self.output_to_action(output1)
+            action2 = self.output_to_action(output2)
+
+            self.game.move_spaceship(self.yellow_ship, action1)
+            self.game.move_spaceship(self.red_ship, action2)
+
+            self.game.update()
+
+            if draw:
+                self.game.draw()
+
+            # Increment step count and check time limit
+            step_count += 1
+            print(f"Steps = {step_count} ----------------------")
+            if self.game.is_game_over() or step_count >= max_steps:
+                done = True
+
+            clock.tick()
+
+        # Simple fitness: +1 per hit, +1 per life remaining
+        genome1.fitness = self.game.yellow_hits
+        genome2.fitness = self.game.red_hits
+        return False
+
+
+    def observe(self, ship, enemy):
+        obs = []
+        # Spaceship positions
+        obs.append(ship.x)
+        obs.append(ship.y)
+        obs.append(enemy.x)
+        obs.append(enemy.y)
+
+        # Own bullets (up to MAX_BULLETS)
+        for i in range(MAX_BULLETS):
+            if i < len(ship.bullets):
+                obs.append(ship.bullets[i].x)
+                obs.append(ship.bullets[i].y)
+            else:
+                obs.append(-1)
+                obs.append(-1)
+
+        # Enemy bullets (up to MAX_BULLETS)
+        for i in range(MAX_BULLETS):
+            if i < len(enemy.bullets):
+                obs.append(enemy.bullets[i].x)
+                obs.append(enemy.bullets[i].y)
+            else:
+                obs.append(-1)
+                obs.append(-1)
+
+        # Optionally: add more features here (like lives)
+        # obs.append(self.game.yellow_lives)
+        # obs.append(self.game.red_lives)
+        print(obs)
+        return obs
+
+    def output_to_action(self, output):
+        # Example: output is a list of size 6, one per Action. Pick the max.
+        return Action(output.index(max(output)))
 
 def eval_genomes(genomes, config):
-    width, height = 720, 360
-    win = pygame.display.set_mode((width, height))
+    win = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Galaxy NEAT")
 
     for i, (genome_id1, genome1) in enumerate(genomes):
-        print(round(i/len(genomes)* 100), end=" ")
+        print(round(i/len(genomes) * 100), end=" ")
         genome1.fitness = 0
         for genome_id2, genome2 in genomes[min(i+1, len(genomes) - 1):]:
-            genome2.fitness = 0 if genome2.fitness == None else genome2.fitness
-            galaxy = SpaceGame(win, width, height)
-
+            if genome2.fitness is None:
+                genome2.fitness = 0
+            galaxy = SpaceGame(win)
             force_quit = galaxy.train_ai(genome1, genome2, config, draw=True)
             if force_quit:
                 quit()
 
-def run_neat(config):
-    #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-85')
+def run_neat(config_path):
+    config = neat.Config(
+        neat.DefaultGenome, neat.DefaultReproduction,
+        neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
+    )
     p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
@@ -44,10 +125,7 @@ def run_neat(config):
         pickle.dump(winner, f)
 
 if __name__ == "__main__":
+    pygame.init()
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config.txt')
-
-
-    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         config_path)
+    config_path = os.path.join(local_dir, "config.txt")
+    run_neat(config_path)
