@@ -1,49 +1,34 @@
 import os
 import pickle
-import random
 import neat
 import pygame
 
 from core.game import Game
 from core.actions import Action
-from core.constants import WIDTH, HEIGHT, FPS
+from core.constants import CHECKPOINT, HIT_REWARD, MOVEMENT_REWARD, STEP_REWARD, SURVIVAL_REWARD, WIDTH, HEIGHT, FPS, WIN_BONUS
+from scripts.neat_trainer import NEATTrainer
+from scripts.fitness_calculator import FitnessCalculator
+from scripts.ai_agent import AIAgent
 
-MAX_BULLETS = 3  # Must match your core constants
+MAX_BULLETS = 3
 
 class SpaceGame:
     def __init__(self, window):
         self.game = Game(window)
         self.yellow_ship = self.game.yellow_ship
         self.red_ship = self.game.red_ship
-
-    def calculate_fitness(self, hits, lives_left, steps_survived, win, movement=0):
-        """
-        Calculate fitness based on various metrics.
-        - HIT_REWARD: Number of hits scored
-        - SURVIVAL_REWARD: How many lives left at end
-        - STEP_REWARD: Number of steps survived
-        - WIN_BONUS: True if this agent won
-        - MOVEMENT_REWARD: Optional, number of moves made (not used unless you count moves)
-        """
-        HIT_REWARD = 15        
-        SURVIVAL_REWARD = 5
-        STEP_REWARD = 0.01
-        WIN_BONUS = 20
-        MOVEMENT_REWARD = 0.005
-        DODGE_REWARD = 0.1
-
-        # Calculate dodge score (approximation based on survival)
-        dodge_score = steps_survived * (3 - (3 - lives_left)) * DODGE_REWARD
-
-        fitness = (
-            hits * HIT_REWARD +
-            lives_left * SURVIVAL_REWARD +
-            steps_survived * STEP_REWARD +
-            (WIN_BONUS if win else 0) +
-            movement * MOVEMENT_REWARD +
-            dodge_score
-        )
-        return fitness
+        self.agent = AIAgent(self.game, MAX_BULLETS)
+        
+        # Initialize fitness calculator with default values
+        # These can be adjusted for different experiments
+        fitness_config = {
+            "hit_reward": HIT_REWARD,
+            "survival_reward": SURVIVAL_REWARD,
+            "step_reward": STEP_REWARD,
+            "win_bonus": WIN_BONUS,
+            "movement_reward": MOVEMENT_REWARD
+        }
+        self.fitness_calculator = FitnessCalculator(fitness_config)
 
     def train_ai(self, genome1, genome2, config, draw=False, max_steps=2000):
         net1 = neat.nn.FeedForwardNetwork.create(genome1, config)
@@ -60,21 +45,20 @@ class SpaceGame:
                 if event.type == pygame.QUIT:
                     return True  # Force quit
 
-            obs1 = self.observe(self.yellow_ship, self.red_ship)
-            obs2 = self.observe(self.red_ship, self.yellow_ship)
+            obs1 = self.agent.observe(self.yellow_ship, self.red_ship)
+            obs2 = self.agent.observe(self.red_ship, self.yellow_ship)
 
             output1 = net1.activate(obs1)
             output2 = net2.activate(obs2)
 
-            action1 = self.output_to_action(output1)
-            action2 = self.output_to_action(output2)
+            action1 = self.agent.output_to_action(output1)
+            action2 = self.agent.output_to_action(output2)
 
-            # Track only true movement (not STAY or SHOOT)
-            if action1 in [Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT]:
+            # Track movement
+            if action1.value < 4:  # UP, DOWN, LEFT, RIGHT
                 yellow_moves += 1
-            if action2 in [Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT]:
+            if action2.value < 4:
                 red_moves += 1
-
 
             self.game.move_spaceship(self.yellow_ship, action1)
             self.game.move_spaceship(self.red_ship, action2)
@@ -82,7 +66,7 @@ class SpaceGame:
             self.game.update()
 
             if draw:
-                self.game.draw()
+                self.game.draw(draw_score=True, draw_hits=True)
 
             step_count += 1
             if self.game.is_game_over() or step_count >= max_steps:
@@ -100,90 +84,104 @@ class SpaceGame:
         yellow_win = r_lives <= 0
         red_win = y_lives <= 0
 
-        # Assign fitness using your new method!
-        genome1.fitness = self.calculate_fitness(y_hits, y_lives, step_count, yellow_win, yellow_moves)
-        genome2.fitness = self.calculate_fitness(r_hits, r_lives, step_count, red_win, red_moves)
+        # Use the fitness calculator to calculate fitness
+        genome1.fitness = self.fitness_calculator.calculate(
+            y_hits, y_lives, step_count, yellow_win, yellow_moves
+        )
+        genome2.fitness = self.fitness_calculator.calculate(
+            r_hits, r_lives, step_count, red_win, red_moves
+        )
         return False
 
-    # --- test_ai stays unchanged for human/AI testing in scripts/play_match.py ---
-    def test_ai(
-        self,
-        net_yellow=None,
-        net_red=None,
-        config=None,
-        controller_yellow='manual',
-        controller_red='manual',
-        draw=True,
-        max_steps=1000,
-    ):
+    def test_ai(self, controller_yellow='manual', controller_red='manual', 
+                net_yellow=None, net_red=None, draw=True):
+        """
+        Test AI agents against each other or human players.
+        
+        Parameters:
+        - controller_yellow/red: 'manual', 'ai', or 'random'
+        - net_yellow/red: Neural networks for AI controllers
+        """
         clock = pygame.time.Clock()
-        step_count = 0
-        done = False
-
-        while not done:
+        self.game.reset()
+        
+        running = True
+        
+        while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    return True
-
-            # Yellow Ship Control
-            if controller_yellow == 'manual':
-                keys = pygame.key.get_pressed()
-                action_yellow = Action.STAY
-                if keys[pygame.K_w]:
-                    action_yellow = Action.UP
-                elif keys[pygame.K_s]:
-                    action_yellow = Action.DOWN
-                elif keys[pygame.K_a]:
-                    action_yellow = Action.LEFT
-                elif keys[pygame.K_d]:
-                    action_yellow = Action.RIGHT
-                elif keys[pygame.K_f]:
-                    action_yellow = Action.SHOOT
-            elif controller_yellow == 'ai' and net_yellow is not None:
-                obs = self.observe(self.yellow_ship, self.red_ship)
-                output = net_yellow.activate(obs)
-                action_yellow = self.output_to_action(output)
-            elif controller_yellow == 'random':
-                action_yellow = Action(random.randint(0, 5))
-            else:
-                action_yellow = Action.STAY
-
-            # Red Ship Control
-            if controller_red == 'manual':
-                keys = pygame.key.get_pressed()
-                action_red = Action.STAY
-                if keys[pygame.K_UP]:
-                    action_red = Action.UP
-                elif keys[pygame.K_DOWN]:
-                    action_red = Action.DOWN
-                elif keys[pygame.K_LEFT]:
-                    action_red = Action.LEFT
-                elif keys[pygame.K_RIGHT]:
-                    action_red = Action.RIGHT
-                elif keys[pygame.K_SLASH]:
-                    action_red = Action.SHOOT
-            elif controller_red == 'ai' and net_red is not None:
-                obs = self.observe(self.red_ship, self.yellow_ship)
-                output = net_red.activate(obs)
-                action_red = self.output_to_action(output)
-            elif controller_red == 'random':
-                action_red = Action(random.randint(0, 5))
-            else:
-                action_red = Action.STAY
-
+                    pygame.quit()
+                    return
+                
+            # Get actions based on controller type
+            action_yellow = self._get_action(controller_yellow, self.yellow_ship, self.red_ship, net_yellow)
+            action_red = self._get_action(controller_red, self.red_ship, self.yellow_ship, net_red)
+            
+            # Apply actions
             self.game.move_spaceship(self.yellow_ship, action_yellow)
             self.game.move_spaceship(self.red_ship, action_red)
+            
+            # Update game state
             self.game.update()
-
-            if draw:
-                self.game.draw()
-
-            step_count += 1
-            if self.game.is_game_over() or step_count >= max_steps:
-                done = True
-
-            clock.tick(FPS)
-        return False
+            
+            # Check for game over
+            if self.game.is_game_over():
+                running = False
+            
+            # Small delay to make the game playable
+            pygame.time.delay(10)
+            
+        self.game.draw()
+        pygame.display.update()
+        pygame.time.delay(2000)
+        
+    def _get_action(self, controller_type, ship, enemy_ship, net=None):
+        """Helper method to get actions based on controller type"""
+        if controller_type == 'manual':
+            return self._get_manual_action(ship)
+        elif controller_type == 'ai' and net is not None:
+            obs = self.agent.observe(ship, enemy_ship)
+            output = net.activate(obs)
+            return self.agent.output_to_action(output)
+        elif controller_type == 'random':
+            import random
+            from core.actions import Action
+            return random.choice(list(Action))
+        else:
+            # Default to STAY if invalid controller
+            return Action.STAY
+        
+    def _get_manual_action(self, ship):
+        """Get manual action from keyboard input"""
+        from core.actions import Action
+        keys = pygame.key.get_pressed()
+        
+        # Yellow ship controls (WASD + SPACE)
+        if ship == self.yellow_ship:
+            if keys[pygame.K_w]:
+                return Action.UP
+            if keys[pygame.K_s]:
+                return Action.DOWN
+            if keys[pygame.K_a]:
+                return Action.LEFT
+            if keys[pygame.K_d]:
+                return Action.RIGHT
+            if keys[pygame.K_SPACE]:
+                return Action.SHOOT
+        # Red ship controls (Arrow keys + RCTRL)
+        else:
+            if keys[pygame.K_UP]:
+                return Action.UP
+            if keys[pygame.K_DOWN]:
+                return Action.DOWN
+            if keys[pygame.K_LEFT]:
+                return Action.LEFT
+            if keys[pygame.K_RIGHT]:
+                return Action.RIGHT
+            if keys[pygame.K_RCTRL]:
+                return Action.SHOOT
+            
+        return Action.STAY
 
     def observe(self, ship, enemy):
         obs = []
@@ -236,8 +234,8 @@ def eval_genomes(genomes, config):
             if genome2.fitness is None:
                 genome2.fitness = 0
             galaxy = SpaceGame(win)
-            # ---- Training mode: draw=False, max_steps=2000 ----
-            force_quit = galaxy.train_ai(genome1, genome2, config, draw=False, max_steps=2000)
+
+            force_quit = galaxy.train_ai(genome1, genome2, config, draw=True, max_steps=2000)
             if force_quit:
                 quit()
 
@@ -247,17 +245,15 @@ def run_neat(config_path, models_dir):
         neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
     )
     # Save checkpoints in .models/
-    checkpoint_prefix = os.path.join(models_dir, "neat-checkpoint-")
-    p = neat.Checkpointer.restore_checkpoint(os.path.join(models_dir, "neat-checkpoint-11"))
-    # p = neat.Population(config)
+    checkpoint_prefix = os.path.join(models_dir, CHECKPOINT)
+    # p = neat.Checkpointer.restore_checkpoint(".neat-checkpoint-31")
+    p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    # Save checkpoints in .models/ directory
     p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
 
     winner = p.run(eval_genomes, 1) 
-    # Save best genome in .models/
     best_path = os.path.join(models_dir, "best.pickle")
     with open(best_path, "wb") as f:
         pickle.dump(winner, f)
@@ -265,8 +261,14 @@ def run_neat(config_path, models_dir):
 if __name__ == "__main__":
     pygame.init()
     local_dir = os.path.dirname(__file__)
-    models_dir = os.path.join(local_dir, "..", "models")  # Remove the dot prefix
-    os.makedirs(models_dir, exist_ok=True)  # Ensure models/ exists
+    models_dir = os.path.join(local_dir, "..", "models")
+    os.makedirs(models_dir, exist_ok=True)
 
     config_path = os.path.join(local_dir, "config.txt")
-    run_neat(config_path, models_dir)
+    
+    # Create and run the trainer with visualization options
+    trainer = NEATTrainer(SpaceGame, config_path, models_dir)
+    
+    # Set visualize=True to see top genomes in action
+    trainer.run(generations=50, visualize=True, visualize_top=3)
+

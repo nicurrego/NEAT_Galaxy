@@ -97,6 +97,13 @@ class Game:
         self.check_bullet_hits()
 
     def draw(self, draw_score=True, draw_hits=True):
+        """
+        Draw the game state to the window.
+        
+        Parameters:
+        - draw_score: Whether to draw the lives counter
+        - draw_hits: Whether to draw the hit counter
+        """
         self.window.fill(BLACK)
         self._draw_divider()
         if draw_score:
