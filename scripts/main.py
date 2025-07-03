@@ -5,7 +5,11 @@ import pygame
 
 from core.game import Game
 from core.actions import Action
-from core.constants import HIT_REWARD, MOVEMENT_REWARD, STEP_REWARD, SURVIVAL_REWARD, WIDTH, HEIGHT, FPS, WIN_BONUS
+from core.constants import (
+    HIT_REWARD, MOVEMENT_REWARD, STEP_REWARD, SURVIVAL_REWARD, 
+    WIDTH, HEIGHT, FPS, WIN_BONUS, CHECKPOINT, RESUME_GENERATIONS, 
+    NEW_GENERATIONS, TRAINED_MODEL
+)
 from scripts.neat_trainer import NEATTrainer
 from scripts.fitness_calculator import FitnessCalculator
 from scripts.ai_agent import AIAgent
@@ -19,8 +23,7 @@ class SpaceGame:
         self.red_ship = self.game.red_ship
         self.agent = AIAgent(self.game, MAX_BULLETS)
         
-        # Initialize fitness calculator with default values
-        # These can be adjusted for different experiments
+        # Initialize fitness calculator with values from constants
         fitness_config = {
             "hit_reward": HIT_REWARD,
             "survival_reward": SURVIVAL_REWARD,
@@ -124,6 +127,12 @@ class SpaceGame:
             # Update game state
             self.game.update()
             
+            # Draw if requested
+            if draw:
+                self.game.draw()
+                pygame.display.update()
+                clock.tick(FPS)
+            
             # Check for game over
             if self.game.is_game_over():
                 running = False
@@ -131,9 +140,11 @@ class SpaceGame:
             # Small delay to make the game playable
             pygame.time.delay(10)
             
-        self.game.draw()
-        pygame.display.update()
-        pygame.time.delay(2000)
+        # Show final state for a moment
+        if draw:
+            self.game.draw()
+            pygame.display.update()
+            pygame.time.delay(2000)
         
     def _get_action(self, controller_type, ship, enemy_ship, net=None):
         """Helper method to get actions based on controller type"""
@@ -239,34 +250,37 @@ def eval_genomes(genomes, config):
             if force_quit:
                 quit()
 
-def run_neat(config_path, models_dir, checkpoint=None):
+def run_neat(config_path, models_dir):
     config = neat.Config(
         neat.DefaultGenome, neat.DefaultReproduction,
         neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
     )
-
     checkpoint_prefix = os.path.join(models_dir, "neat-checkpoint-")
     stats = neat.StatisticsReporter()
 
-    if checkpoint and os.path.exists(checkpoint):
-        print(f"Found checkpoint at {checkpoint}, resuming training.")
-        p = neat.Checkpointer.restore_checkpoint(checkpoint)
-        p.add_reporter(neat.StdOutReporter(True))
-        p.add_reporter(stats)
-        p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
-        winner = p.run(eval_genomes, 1)  # run just 1 generation to save snapshot
+    if CHECKPOINT and os.path.exists(CHECKPOINT):
+        print(f"==== Resuming from checkpoint '{CHECKPOINT}' for {RESUME_GENERATIONS} generation(s) ====")
+        p = neat.Checkpointer.restore_checkpoint(CHECKPOINT)
     else:
-        print("No checkpoint found or not provided, starting fresh training.")
+        print(f"==== Starting fresh training for {NEW_GENERATIONS} generation(s) ====")
         p = neat.Population(config)
-        p.add_reporter(neat.StdOutReporter(True))
-        p.add_reporter(stats)
-        p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
-        winner = p.run(eval_genomes, 50)  # normal full training
 
-    best_path = os.path.join(models_dir, "best.pickle")
+    p.add_reporter(neat.StdOutReporter(True))
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
+
+    generations = RESUME_GENERATIONS if (CHECKPOINT and os.path.exists(CHECKPOINT)) else NEW_GENERATIONS
+    winner = p.run(eval_genomes, generations)
+
+    best_path = os.path.join(models_dir, TRAINED_MODEL)
     with open(best_path, "wb") as f:
         pickle.dump(winner, f)
-    print(f"Best model saved to {best_path}")
+
+    print("\n==== NEAT RUN SUMMARY ====")
+    print(f"Checkpoint: {CHECKPOINT if CHECKPOINT else 'None'}")
+    print(f"Generations: {generations}")
+    print(f"Best model saved to: {best_path}")
+    print("==========================")
 
 
 if __name__ == "__main__":
@@ -281,5 +295,5 @@ if __name__ == "__main__":
     trainer = NEATTrainer(SpaceGame, config_path, models_dir)
     
     # Set visualize=True to see top genomes in action
-    trainer.run(generations=50, visualize=True, visualize_top=3)
+    trainer.run(generations=NEW_GENERATIONS, visualize=True, visualize_top=3)
 
