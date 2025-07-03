@@ -14,6 +14,10 @@ add penalty for recieving hits, (keep it minimal)
 3) little tewak
 - after 30 gens. the model moves interestingly odd, it reacts to shooting but sill very lost in objective.
 - after 50 gens. the model when playing yellow shows active shooting and not much of dodging, **however** the model when playing red show super clear patterns (when yellow is near the left wall it moves to the right wall, when the yellow ship is near de middle it fires and tries to get close to yellow in Y axis, when yello fires the red ship goes down and completely stops shooting).
+- after 200 gens, the red ship hides on the top and nothing else, the red ship fires in the spot until the bullets disapear from the screen, then it moves up a little and repeat until it reaches the top.
+(I don't know if this is overfitting, I'm going to see 70, 80 and 90 gens to compare before tweaking the reward system)
+- 70 gens. seems to have overfitting already.
+- 35 gens. still not clear objective, but some trends present.
 
         HIT_REWARD = 10        
         SURVIVAL_REWARD = 2    
