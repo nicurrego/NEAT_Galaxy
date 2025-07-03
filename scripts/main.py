@@ -294,6 +294,7 @@ if __name__ == "__main__":
     # Create and run the trainer with visualization options
     trainer = NEATTrainer(SpaceGame, config_path, models_dir)
     
-    # Set visualize=True to see top genomes in action
-    trainer.run(generations=NEW_GENERATIONS, visualize=True, visualize_top=3)
+    # Set draw_training=True to see all training games at FPS speed
+    # Note: This will significantly slow down training
+    trainer.run(generations=NEW_GENERATIONS, visualize=True, visualize_top=3, draw_training=True)
 

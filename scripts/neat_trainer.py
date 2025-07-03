@@ -14,18 +14,19 @@ class NEATTrainer:
             neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
         )
         
-    def eval_genomes(self, genomes, config, visualize=False, visualize_top=5):
+    def eval_genomes(self, genomes, config, visualize=False, visualize_top=5, draw_training=False):
         """
         Evaluate genomes with options for visualization.
         
         Parameters:
-        - visualize: Whether to visualize any games
+        - visualize: Whether to visualize top genomes after evaluation
         - visualize_top: Number of top genomes to visualize (if visualize=True)
+        - draw_training: Whether to draw all games during training (slows down training)
         """
         win = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Galaxy NEAT")
 
-        # First pass: evaluate all genomes without visualization
+        # First pass: evaluate all genomes with optional drawing
         for i, (genome_id1, genome1) in enumerate(genomes):
             print(f"Evaluating genome {i+1}/{len(genomes)}: {genome_id1}", end="\r")
             genome1.fitness = 0
@@ -33,7 +34,7 @@ class NEATTrainer:
                 if genome2.fitness is None:
                     genome2.fitness = 0
                 game = self.game_class(win)
-                force_quit = game.train_ai(genome1, genome2, config, draw=False, max_steps=2000)
+                force_quit = game.train_ai(genome1, genome2, config, draw=draw_training, max_steps=2000)
                 if force_quit:
                     quit()
     
@@ -52,8 +53,17 @@ class NEATTrainer:
                     game.train_ai(genome1, genome2, config, draw=True, max_steps=1000)
                     pygame.time.delay(500)  # Brief pause between visualizations
     
-    def run(self, generations=50, restore_checkpoint=None):
-        """Run the NEAT algorithm to train the neural network."""
+    def run(self, generations=50, restore_checkpoint=None, visualize=False, visualize_top=5, draw_training=False):
+        """
+        Run the NEAT algorithm to train the neural network.
+        
+        Parameters:
+        - generations: Number of generations to run
+        - restore_checkpoint: Checkpoint number to restore from (if any)
+        - visualize: Whether to visualize top genomes after evaluation
+        - visualize_top: Number of top genomes to visualize
+        - draw_training: Whether to draw all games during training (slows down training)
+        """
         # Create the population
         if restore_checkpoint:
             checkpoint_path = os.path.join(self.models_dir, f"neat-checkpoint-{restore_checkpoint}")
@@ -70,8 +80,13 @@ class NEATTrainer:
         checkpoint_prefix = os.path.join(self.models_dir, "neat-checkpoint-")
         p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
 
+        # Create a custom eval_genomes function that includes visualization parameters
+        def eval_genomes_wrapper(genomes, config):
+            return self.eval_genomes(genomes, config, visualize=visualize, 
+                                    visualize_top=visualize_top, draw_training=draw_training)
+
         # Run for up to n generations
-        winner = p.run(self.eval_genomes, generations)
+        winner = p.run(eval_genomes_wrapper, generations)
         
         # Save the winner
         best_path = os.path.join(self.models_dir, "best.pickle")
@@ -79,4 +94,7 @@ class NEATTrainer:
             pickle.dump(winner, f)
             
         return winner
+
+
+
 
