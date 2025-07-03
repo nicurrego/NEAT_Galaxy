@@ -10,6 +10,19 @@ add penalty for recieving hits, (keep it minimal)
 
 
 # Model Notes
+6) New reward system.
+- 50 gens. The agents move however it looks like overfitting.
+- 32 gens. The red ship learned to avoid direct bullets. The yellow ship moves to the bottom and then no one seems to have interest in shooting.
+- 22 gens. The ships don't understand nothing, but try to react to bullets.
+- 12 gens. The ships act random.
+
+        HIT_REWARD = 15        
+        SURVIVAL_REWARD = 5
+        STEP_REWARD = 0.01
+        WIN_BONUS = 20
+        MOVEMENT_REWARD = 0.005
+        DODGE_REWARD = 0.1
+
 5) No reward for shooting.
 - 20 gens. The agents don't seem to like shooting at all XD
         HIT_REWARD = 10        

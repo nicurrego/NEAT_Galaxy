@@ -19,24 +19,29 @@ class SpaceGame:
     def calculate_fitness(self, hits, lives_left, steps_survived, win, movement=0):
         """
         Calculate fitness based on various metrics.
-        - hits: Number of hits scored
-        - lives_left: How many lives left at end
-        - steps_survived: Number of steps survived
-        - win: True if this agent won
-        - movement: Optional, number of moves made (not used unless you count moves)
+        - HIT_REWARD: Number of hits scored
+        - SURVIVAL_REWARD: How many lives left at end
+        - STEP_REWARD: Number of steps survived
+        - WIN_BONUS: True if this agent won
+        - MOVEMENT_REWARD: Optional, number of moves made (not used unless you count moves)
         """
-        HIT_REWARD = 10        
-        SURVIVAL_REWARD = 1    
-        STEP_REWARD = 0.02
-        WIN_BONUS = 15
-        MOVEMENT_REWARD = 0.01 
+        HIT_REWARD = 15        
+        SURVIVAL_REWARD = 5
+        STEP_REWARD = 0.01
+        WIN_BONUS = 20
+        MOVEMENT_REWARD = 0.005
+        DODGE_REWARD = 0.1
+
+        # Calculate dodge score (approximation based on survival)
+        dodge_score = steps_survived * (3 - (3 - lives_left)) * DODGE_REWARD
 
         fitness = (
             hits * HIT_REWARD +
             lives_left * SURVIVAL_REWARD +
             steps_survived * STEP_REWARD +
             (WIN_BONUS if win else 0) +
-            movement * MOVEMENT_REWARD
+            movement * MOVEMENT_REWARD +
+            dodge_score
         )
         return fitness
 
@@ -187,6 +192,13 @@ class SpaceGame:
         obs.append(ship.y)
         obs.append(enemy.x)
         obs.append(enemy.y)
+        
+        # Distance to enemy (helps with targeting)
+        dx = enemy.x - ship.x
+        dy = enemy.y - ship.y
+        obs.append(dx)
+        obs.append(dy)
+        
         # Own bullets
         for i in range(MAX_BULLETS):
             if i < len(ship.bullets):
@@ -203,9 +215,11 @@ class SpaceGame:
             else:
                 obs.append(-1)
                 obs.append(-1)
-        # Optionally: add more info
-        # obs.append(self.game.yellow_lives)
-        # obs.append(self.game.red_lives)
+            
+        # Add lives information
+        obs.append(self.game.yellow_lives if ship == self.yellow_ship else self.game.red_lives)
+        obs.append(self.game.red_lives if ship == self.yellow_ship else self.game.yellow_lives)
+        
         return obs
 
     def output_to_action(self, output):
@@ -227,24 +241,32 @@ def eval_genomes(genomes, config):
             if force_quit:
                 quit()
 
-def run_neat(config_path):
+def run_neat(config_path, models_dir):
     config = neat.Config(
         neat.DefaultGenome, neat.DefaultReproduction,
         neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
     )
-    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-29')
-    p = neat.Population(config)
+    # Save checkpoints in .models/
+    checkpoint_prefix = os.path.join(models_dir, "neat-checkpoint-")
+    p = neat.Checkpointer.restore_checkpoint(os.path.join(models_dir, "neat-checkpoint-11"))
+    # p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(2))
+    # Save checkpoints in .models/ directory
+    p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
 
-    winner = p.run(eval_genomes, 20)
-    with open("best.pickle", "wb") as f:
+    winner = p.run(eval_genomes, 1) 
+    # Save best genome in .models/
+    best_path = os.path.join(models_dir, "best.pickle")
+    with open(best_path, "wb") as f:
         pickle.dump(winner, f)
 
 if __name__ == "__main__":
     pygame.init()
     local_dir = os.path.dirname(__file__)
+    models_dir = os.path.join(local_dir, "..", "models")  # Remove the dot prefix
+    os.makedirs(models_dir, exist_ok=True)  # Ensure models/ exists
+
     config_path = os.path.join(local_dir, "config.txt")
-    run_neat(config_path)
+    run_neat(config_path, models_dir)
