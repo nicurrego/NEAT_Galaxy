@@ -1,12 +1,9 @@
-The human_play script is working, it loads the spaceship images, however I will need to modify the core module to load it from there.
-
-next I will be working on the environment to train the agents using NEAT.
-
 # LAST DONE:
-stop rewarding the shooting as a movement reward and traind 20 gens with this new system.
+watched the training at 1500 FPS.
 
 # NEXT:
-add penalty for recieving hits, (keep it minimal)
+- I can train a bunch of gens and then I can see them training. e.g. train fast 9 gens and I see the 10th, if its working I can train another 9 and then see the 20th. much faster and avoid seeing the robot hitting the wall for hours.
+- I need to orginise this and merge with main
 
 
 # Model Notes
