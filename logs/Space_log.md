@@ -10,6 +10,16 @@ add penalty for recieving hits, (keep it minimal)
 
 
 # Model Notes
+4) little tewak.2
+- 50 gens. The model learned to figth on the bottom, the yellow goes first and fires, the red ship react to the fire and tries to hide in the bottom running directly to the bullets and loosing.
+- 20 gens. The yellow ship shows interest in avoiding bullets, not very well though, the red ship goes down and stars shooting without caring anything else.
+- 25 gens. The yellow ship learnd to react to bullets, not quite well still. the red ship learend to win by constant firering in the bottom.
+- 30 gens. The yellow losed the will of following the red ship, the red ship still on the bottom and fires when yellow goes near it.
+        HIT_REWARD = 10        
+        SURVIVAL_REWARD = 1    
+        STEP_REWARD = 0.02
+        WIN_BONUS = 15
+        MOVEMENT_REWARD = 0.01 
 
 3) little tewak
 - after 30 gens. the model moves interestingly odd, it reacts to shooting but sill very lost in objective.
@@ -18,6 +28,7 @@ add penalty for recieving hits, (keep it minimal)
 (I don't know if this is overfitting, I'm going to see 70, 80 and 90 gens to compare before tweaking the reward system)
 - 70 gens. seems to have overfitting already.
 - 35 gens. still not clear objective, but some trends present.
+- 10 gens. yellow ship shows reaction to reds bullets, tries to fire randomly. Red is a dummy.
 
         HIT_REWARD = 10        
         SURVIVAL_REWARD = 2    

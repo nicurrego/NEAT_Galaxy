@@ -26,10 +26,10 @@ class SpaceGame:
         - movement: Optional, number of moves made (not used unless you count moves)
         """
         HIT_REWARD = 10        
-        SURVIVAL_REWARD = 2    
-        STEP_REWARD = 0.03
+        SURVIVAL_REWARD = 1    
+        STEP_REWARD = 0.02
         WIN_BONUS = 15
-        MOVEMENT_REWARD = 0.07 
+        MOVEMENT_REWARD = 0.01 
 
         fitness = (
             hits * HIT_REWARD +
@@ -64,11 +64,12 @@ class SpaceGame:
             action1 = self.output_to_action(output1)
             action2 = self.output_to_action(output2)
 
-            # Track movement (not STAY)
-            if action1 != Action.STAY:
+            # Track only true movement (not STAY or SHOOT)
+            if action1 in [Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT]:
                 yellow_moves += 1
-            if action2 != Action.STAY:
+            if action2 in [Action.UP, Action.DOWN, Action.LEFT, Action.RIGHT]:
                 red_moves += 1
+
 
             self.game.move_spaceship(self.yellow_ship, action1)
             self.game.move_spaceship(self.red_ship, action2)
@@ -231,7 +232,7 @@ def run_neat(config_path):
         neat.DefaultGenome, neat.DefaultReproduction,
         neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
     )
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-9')
+    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-29')
     # p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
