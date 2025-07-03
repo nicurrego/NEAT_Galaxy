@@ -1,5 +1,5 @@
 # Python cache and environment
-__pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
 *.pyd
@@ -27,10 +27,14 @@ neat-checkpoint-*
 .DS_Store
 Thumbs.db
 
-# Ignore assets generated during runs (but not your images/sounds)
-assets/*.wav
-assets/*.mp3
-assets/*.ogg
+# Ignore temp files
+*.tmp
+*.temp
+
+# Ignore assets generated during runs (move generated to output/ if needed)
+# assets/*.wav
+# assets/*.mp3
+# assets/*.ogg
 
 # Ignore config that shouldn't be tracked (if you have local only config)
 # !scripts/config.txt   # Uncomment if you want to keep config.txt tracked
