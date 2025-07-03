@@ -5,7 +5,7 @@ import pygame
 
 from core.game import Game
 from core.actions import Action
-from core.constants import CHECKPOINT, HIT_REWARD, MOVEMENT_REWARD, STEP_REWARD, SURVIVAL_REWARD, WIDTH, HEIGHT, FPS, WIN_BONUS
+from core.constants import HIT_REWARD, MOVEMENT_REWARD, STEP_REWARD, SURVIVAL_REWARD, WIDTH, HEIGHT, FPS, WIN_BONUS
 from scripts.neat_trainer import NEATTrainer
 from scripts.fitness_calculator import FitnessCalculator
 from scripts.ai_agent import AIAgent
@@ -239,24 +239,35 @@ def eval_genomes(genomes, config):
             if force_quit:
                 quit()
 
-def run_neat(config_path, models_dir):
+def run_neat(config_path, models_dir, checkpoint=None):
     config = neat.Config(
         neat.DefaultGenome, neat.DefaultReproduction,
         neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
     )
-    # Save checkpoints in .models/
-    checkpoint_prefix = os.path.join(models_dir, CHECKPOINT)
-    # p = neat.Checkpointer.restore_checkpoint(".neat-checkpoint-31")
-    p = neat.Population(config)
-    p.add_reporter(neat.StdOutReporter(True))
-    stats = neat.StatisticsReporter()
-    p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
 
-    winner = p.run(eval_genomes, 1) 
+    checkpoint_prefix = os.path.join(models_dir, "neat-checkpoint-")
+    stats = neat.StatisticsReporter()
+
+    if checkpoint and os.path.exists(checkpoint):
+        print(f"Found checkpoint at {checkpoint}, resuming training.")
+        p = neat.Checkpointer.restore_checkpoint(checkpoint)
+        p.add_reporter(neat.StdOutReporter(True))
+        p.add_reporter(stats)
+        p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
+        winner = p.run(eval_genomes, 1)  # run just 1 generation to save snapshot
+    else:
+        print("No checkpoint found or not provided, starting fresh training.")
+        p = neat.Population(config)
+        p.add_reporter(neat.StdOutReporter(True))
+        p.add_reporter(stats)
+        p.add_reporter(neat.Checkpointer(2, filename_prefix=checkpoint_prefix))
+        winner = p.run(eval_genomes, 50)  # normal full training
+
     best_path = os.path.join(models_dir, "best.pickle")
     with open(best_path, "wb") as f:
         pickle.dump(winner, f)
+    print(f"Best model saved to {best_path}")
+
 
 if __name__ == "__main__":
     pygame.init()
