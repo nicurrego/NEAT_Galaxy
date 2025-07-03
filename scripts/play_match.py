@@ -57,7 +57,7 @@ if __name__ == "__main__":
     # Uncomment the experiments you want to run:
     
     # play_human_vs_human()
-    play_human_vs_ai()
+    # play_human_vs_ai()
     # play_ai_vs_human()
-    # play_ai_vs_ai()
+    play_ai_vs_ai()
     # play_random_vs_ai()

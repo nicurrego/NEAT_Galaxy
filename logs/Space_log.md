@@ -10,6 +10,15 @@ add penalty for recieving hits, (keep it minimal)
 
 
 # Model Notes
+5) No reward for shooting.
+- 20 gens. The agents don't seem to like shooting at all XD
+        HIT_REWARD = 10        
+        SURVIVAL_REWARD = 1    
+        STEP_REWARD = 0.02
+        WIN_BONUS = 15
+        MOVEMENT_REWARD = 0.01
+
+
 4) little tewak.2
 - 50 gens. The model learned to figth on the bottom, the yellow goes first and fires, the red ship react to the fire and tries to hide in the bottom running directly to the bullets and loosing.
 - 20 gens. The yellow ship shows interest in avoiding bullets, not very well though, the red ship goes down and stars shooting without caring anything else.
