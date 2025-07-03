@@ -232,14 +232,14 @@ def run_neat(config_path):
         neat.DefaultGenome, neat.DefaultReproduction,
         neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path
     )
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-29')
-    # p = neat.Population(config)
+    # p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-29')
+    p = neat.Population(config)
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(1))
+    p.add_reporter(neat.Checkpointer(2))
 
-    winner = p.run(eval_genomes, 1)
+    winner = p.run(eval_genomes, 20)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
 

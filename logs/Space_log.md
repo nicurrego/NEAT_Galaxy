@@ -3,7 +3,7 @@ The human_play script is working, it loads the spaceship images, however I will 
 next I will be working on the environment to train the agents using NEAT.
 
 # LAST DONE:
-tried best picke, triend some of the examples of the play_match.py
+stop rewarding the shooting as a movement reward and traind 20 gens with this new system.
 
 # NEXT:
 add penalty for recieving hits, (keep it minimal)
